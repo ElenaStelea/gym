@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Program Sală</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0e; --card: #161616; --card2: #1e1e1e;
+    --accent: #e8ff47; --accent2: #ff6b35;
+    --text: #f0f0f0; --muted: #666; --border: #2a2a2a;
+    --done: #2a3a1a; --done-border: #5a8a2a;
+    --danger: #ff3b30;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding: 16px; }
+
+  header { text-align: center; padding: 24px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.8rem; letter-spacing: 3px; color: var(--accent); line-height: 1; }
+  header p { color: var(--muted); font-size: 0.8rem; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+
+  .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex-shrink: 0; background: var(--card); border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tab.active { background: var(--accent); color: #0e0e0e; border-color: var(--accent); }
+  .tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  .day { display: none; }
+  .day.active { display: block; }
+  .day-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 2px; margin-bottom: 4px; }
+  .day-subtitle { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
+
+  .day-progress { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+  .progress-bar-wrap { flex: 1; background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+  .progress-label { font-size: 0.75rem; color: var(--muted); min-width: 40px; text-align: right; }
+
+  /* Exercise card */
+  .exercise { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; }
+  .exercise.completed { background: var(--done); border-color: var(--done-border); }
+
+  .exercise-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+  .ex-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--accent); min-width: 20px; flex-shrink: 0; }
+  .ex-info { flex: 1; cursor: pointer; min-width: 0; }
+  .ex-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ex-scheme { color: var(--muted); font-size: 0.75rem; margin-top: 1px; }
+  .ex-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .ex-edit-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; padding: 5px 8px; font-size: 0.72rem; transition: all 0.2s; }
+  .ex-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ex-del-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; padding: 5px 8px; font-size: 0.72rem; transition: all 0.2s; }
+  .ex-del-btn:hover { border-color: var(--danger); color: var(--danger); }
+  .ex-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .exercise.completed .ex-check { background: var(--done-border); border-color: var(--done-border); }
+  .checkmark { display: none; font-size: 0.7rem; }
+  .exercise.completed .checkmark { display: block; }
+
+  /* Edit exercise form */
+  .ex-edit-form { display: none; padding: 0 14px 12px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .exercise.editing .ex-edit-form { display: block; }
+  .edit-row { margin-bottom: 8px; }
+  .edit-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .edit-input { background: var(--card2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 7px 10px; width: 100%; }
+  .edit-input:focus { outline: none; border-color: var(--accent); }
+  .edit-save-btn { background: var(--accent); border: none; border-radius: 8px; color: #0e0e0e; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 700; padding: 8px 16px; width: 100%; margin-top: 4px; }
+
+  /* Sets */
+  .sets-table { padding: 0 14px 12px; display: none; }
+  .exercise.open .sets-table { display: block; }
+  .sets-header { display: grid; grid-template-columns: 34px 1fr 1fr 34px 26px; gap: 5px; font-size: 0.67rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 5px; }
+  .set-row { display: grid; grid-template-columns: 34px 1fr 1fr 34px 26px; gap: 5px; align-items: center; padding: 3px 0; }
+  .set-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+  .set-input { background: var(--card2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 5px 4px; width: 100%; text-align: center; }
+  .set-input:focus { outline: none; border-color: var(--accent); }
+  .set-done-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; padding: 5px 2px; font-size: 0.75rem; transition: all 0.2s; width: 100%; }
+  .set-done-btn.done { background: var(--done-border); border-color: var(--done-border); color: white; }
+  .set-del-btn { background: none; border: none; color: #444; cursor: pointer; font-size: 1rem; padding: 2px; line-height: 1; transition: color 0.2s; }
+  .set-del-btn:hover { color: var(--accent2); }
+  .add-set-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: none; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; padding: 7px 12px; margin-top: 8px; width: 100%; transition: all 0.2s; }
+  .add-set-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Add exercise */
+  .add-exercise-card { border: 2px dashed var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .add-exercise-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: none; border: none; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 16px; width: 100%; transition: all 0.2s; }
+  .add-exercise-btn:hover { color: var(--accent); }
+  .add-exercise-form { display: none; padding: 14px; }
+  .add-exercise-card.open .add-exercise-btn { display: none; }
+  .add-exercise-card.open .add-exercise-form { display: block; }
+  .add-ex-save { background: var(--accent); border: none; border-radius: 8px; color: #0e0e0e; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 700; padding: 8px 16px; width: 100%; margin-top: 8px; }
+  .add-ex-cancel { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; padding: 8px 16px; width: 100%; margin-top: 6px; }
+
+  /* Confirm delete overlay */
+  .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .confirm-overlay.show { display: flex; }
+  .confirm-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 300px; width: 100%; text-align: center; }
+  .confirm-box h3 { font-size: 1rem; margin-bottom: 8px; }
+  .confirm-box p { color: var(--muted); font-size: 0.82rem; margin-bottom: 20px; }
+  .confirm-yes { background: var(--danger); border: none; border-radius: 8px; color: white; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; padding: 10px; width: 100%; margin-bottom: 8px; }
+  .confirm-no { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 10px; width: 100%; }
+
+  .reset-btn { display: block; width: 100%; margin-top: 24px; padding: 12px; background: none; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+  .reset-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Program Sală</h1>
+  <p>5 zile · Upper focus · Bench progression</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchDay(0)">Z1 Upper A</button>
+  <button class="tab" onclick="switchDay(1)">Z2 Lower A</button>
+  <button class="tab" onclick="switchDay(2)">Z3 Upper B</button>
+  <button class="tab" onclick="switchDay(3)">Z4 Lower B</button>
+  <button class="tab" onclick="switchDay(4)">Z5 Upper C</button>
+</div>
+
+<div id="days-container"></div>
+
+<!-- Confirm delete overlay -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <h3>Ștergi exercițiul?</h3>
+    <p id="confirm-text">Această acțiune nu poate fi anulată.</p>
+    <button class="confirm-yes" id="confirm-yes">Da, șterge</button>
+    <button class="confirm-no" onclick="closeConfirm()">Anulează</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_DAYS = [
+  {
+    title:"Ziua 1 – Upper A", subtitle:"Bench focus · Piept · Triceps · Umeri",
+    exercises:[
+      {name:"Bench Press", scheme:"4x8 → 4x6 → 4x3 → top", sets:[{kg:"47.5",reps:"8"},{kg:"50",reps:"8"},{kg:"52.5",reps:"8"},{kg:"55",reps:"8"}]},
+      {name:"Incline Dumbbell Press", scheme:"4x8", sets:[{kg:"20",reps:"8"},{kg:"20",reps:"8"},{kg:"22",reps:"8"},{kg:"22",reps:"8"}]},
+      {name:"Chest Fly", scheme:"3x12", sets:[{kg:"14",reps:"12"},{kg:"14",reps:"12"},{kg:"16",reps:"12"}]},
+      {name:"Overhead Triceps Ext", scheme:"4x10", sets:[{kg:"20",reps:"10"},{kg:"20",reps:"10"},{kg:"22.5",reps:"10"},{kg:"22.5",reps:"10"}]},
+      {name:"Lateral Raises", scheme:"4x12", sets:[{kg:"8",reps:"12"},{kg:"8",reps:"12"},{kg:"10",reps:"12"},{kg:"10",reps:"12"}]},
+      {name:"Face Pulls", scheme:"3x15", sets:[{kg:"15",reps:"15"},{kg:"15",reps:"15"},{kg:"17.5",reps:"15"}]}
+    ]
+  },
+  {
+    title:"Ziua 2 – Lower A", subtitle:"Quad focus · Squat principal",
+    exercises:[
+      {name:"Squat", scheme:"4x6 → 4x3 → top", sets:[{kg:"75",reps:"6"},{kg:"80",reps:"6"},{kg:"85",reps:"6"},{kg:"87.5",reps:"6"}]},
+      {name:"Bulgarian Split Squat", scheme:"3x8/picior", sets:[{kg:"16",reps:"8"},{kg:"18",reps:"8"},{kg:"18",reps:"8"}]},
+      {name:"Leg Press", scheme:"3x10", sets:[{kg:"120",reps:"10"},{kg:"130",reps:"10"},{kg:"140",reps:"10"}]},
+      {name:"Extensii (Leg Extension)", scheme:"4x10", sets:[{kg:"40",reps:"10"},{kg:"45",reps:"10"},{kg:"45",reps:"10"},{kg:"50",reps:"10"}]},
+      {name:"Leg Curls", scheme:"3x12", sets:[{kg:"35",reps:"12"},{kg:"35",reps:"12"},{kg:"40",reps:"12"}]}
+    ]
+  },
+  {
+    title:"Ziua 3 – Upper B", subtitle:"Spate · Biceps · Umeri · Close Grip",
+    exercises:[
+      {name:"Chin Ups", scheme:"4x8", sets:[{kg:"0",reps:"8"},{kg:"0",reps:"8"},{kg:"0",reps:"8"},{kg:"0",reps:"8"}]},
+      {name:"Rows cu Bara", scheme:"4x8", sets:[{kg:"50",reps:"8"},{kg:"50",reps:"8"},{kg:"52.5",reps:"8"},{kg:"52.5",reps:"8"}]},
+      {name:"Close Grip Bench", scheme:"4x6", sets:[{kg:"40",reps:"6"},{kg:"42.5",reps:"6"},{kg:"45",reps:"6"},{kg:"47.5",reps:"6"}]},
+      {name:"Rear Delt Fly", scheme:"3x15", sets:[{kg:"8",reps:"15"},{kg:"8",reps:"15"},{kg:"10",reps:"15"}]},
+      {name:"Hammer Curls", scheme:"3x12", sets:[{kg:"12",reps:"12"},{kg:"12",reps:"12"},{kg:"14",reps:"12"}]},
+      {name:"Lateral Raises", scheme:"3x15", sets:[{kg:"8",reps:"15"},{kg:"8",reps:"15"},{kg:"10",reps:"15"}]}
+    ]
+  },
+  {
+    title:"Ziua 4 – Lower B", subtitle:"Glute & Posterior focus",
+    exercises:[
+      {name:"Romanian DLS", scheme:"4x6 → progresie", sets:[{kg:"80",reps:"6"},{kg:"82.5",reps:"6"},{kg:"85",reps:"6"},{kg:"87.5",reps:"6"}]},
+      {name:"Hip Thrust", scheme:"4x10", sets:[{kg:"80",reps:"10"},{kg:"90",reps:"10"},{kg:"100",reps:"10"},{kg:"100",reps:"10"}]},
+      {name:"Reverse Lunges", scheme:"3x8/picior", sets:[{kg:"26",reps:"8"},{kg:"26",reps:"8"},{kg:"26",reps:"8"}]},
+      {name:"Lying Leg Curls", scheme:"3x10", sets:[{kg:"35",reps:"10"},{kg:"40",reps:"10"},{kg:"40",reps:"10"}]},
+      {name:"Abductor / Kickbacks", scheme:"3x12", sets:[{kg:"50",reps:"12"},{kg:"55",reps:"12"},{kg:"55",reps:"12"}]}
+    ]
+  },
+  {
+    title:"Ziua 5 – Upper C", subtitle:"OHP principal · Umeri · Trapez · Spate",
+    exercises:[
+      {name:"Overhead Press (Bara)", scheme:"4x6 → progresie", sets:[{kg:"35",reps:"6"},{kg:"37.5",reps:"6"},{kg:"40",reps:"6"},{kg:"42.5",reps:"6"}]},
+      {name:"Incline Bench / DB Press", scheme:"3x10", sets:[{kg:"22",reps:"10"},{kg:"22",reps:"10"},{kg:"24",reps:"10"}]},
+      {name:"Tracțiuni (Pronație)", scheme:"4x8", sets:[{kg:"0",reps:"8"},{kg:"0",reps:"8"},{kg:"0",reps:"8"},{kg:"0",reps:"8"}]},
+      {name:"Shrugs (Bara / Gantere)", scheme:"4x12", sets:[{kg:"60",reps:"12"},{kg:"70",reps:"12"},{kg:"70",reps:"12"},{kg:"80",reps:"12"}]},
+      {name:"Lateral Raises", scheme:"4x15", sets:[{kg:"8",reps:"15"},{kg:"8",reps:"15"},{kg:"10",reps:"15"},{kg:"10",reps:"15"}]},
+      {name:"Triceps Pushdown", scheme:"3x12", sets:[{kg:"25",reps:"12"},{kg:"27.5",reps:"12"},{kg:"30",reps:"12"}]}
+    ]
+  }
+];
+
+// ── State ─────────────────────────────────────────────────────────
+// state[di] = { exercises: [{name, scheme, sets:[{kg,reps,done}]}] }
+let state = [];
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('workout_v3');
+    if (raw) { state = JSON.parse(raw); return; }
+  } catch(e) {}
+  state = DEFAULT_DAYS.map(day => ({
+    exercises: day.exercises.map(ex => ({
+      name: ex.name, scheme: ex.scheme,
+      sets: ex.sets.map(s => ({kg:s.kg, reps:s.reps, done:false}))
+    }))
+  }));
+}
+
+function save() { localStorage.setItem('workout_v3', JSON.stringify(state)); }
+
+// ── Render ────────────────────────────────────────────────────────
+function renderAll() {
+  document.getElementById('days-container').innerHTML =
+    DEFAULT_DAYS.map((day, di) => renderDay(day, di)).join('');
+}
+
+function renderDay(dayMeta, di) {
+  const exArr = state[di].exercises;
+  const total = exArr.length;
+  const done = exArr.filter(ex => ex.sets.length > 0 && ex.sets.every(s => s.done)).length;
+  const pct = total ? done/total*100 : 0;
+  return `<div class="day${di===0?' active':''}" id="day${di}">
+    <div class="day-title">${dayMeta.title}</div>
+    <div class="day-subtitle">${dayMeta.subtitle}</div>
+    <div class="day-progress">
+      <span style="font-size:0.75rem;color:var(--muted)">Progres</span>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog${di}" style="width:${pct}%"></div></div>
+      <span class="progress-label" id="prog${di}-label">${done}/${total}</span>
+    </div>
+    <div id="exercises-${di}">${exArr.map((ex,ei) => renderExercise(di,ei)).join('')}</div>
+    ${renderAddExercise(di)}
+    <button class="reset-btn" onclick="resetDay(${di})">Reset ziua ${di+1}</button>
+  </div>`;
+}
+
+function renderExercise(di, ei) {
+  const ex = state[di].exercises[ei];
+  const allDone = ex.sets.length > 0 && ex.sets.every(s => s.done);
+  return `<div class="exercise${allDone?' completed':''}" id="ex-${di}-${ei}">
+    <div class="exercise-header">
+      <span class="ex-num">${ei+1}</span>
+      <div class="ex-info" onclick="toggleEx(${di},${ei})">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-scheme">${ex.scheme}</div>
+      </div>
+      <div class="ex-actions">
+        <button class="ex-edit-btn" onclick="toggleEditEx(${di},${ei})">✎</button>
+        <button class="ex-del-btn" onclick="confirmDeleteEx(${di},${ei})">✕</button>
+      </div>
+      <div class="ex-check"><span class="checkmark">✓</span></div>
+    </div>
+    <div class="ex-edit-form" id="edit-form-${di}-${ei}">
+      <div class="edit-row">
+        <div class="edit-label">Nume exercițiu</div>
+        <input class="edit-input" id="edit-name-${di}-${ei}" value="${ex.name}">
+      </div>
+      <div class="edit-row">
+        <div class="edit-label">Schemă (ex: 4x8)</div>
+        <input class="edit-input" id="edit-scheme-${di}-${ei}" value="${ex.scheme}">
+      </div>
+      <button class="edit-save-btn" onclick="saveEditEx(${di},${ei})">Salvează</button>
+    </div>
+    <div class="sets-table">
+      <div class="sets-header"><span>Set</span><span>Kg</span><span>Reps</span><span></span><span></span></div>
+      <div id="sets-${di}-${ei}">${ex.sets.map((s,si) => renderSetRow(di,ei,si,s)).join('')}</div>
+      <button class="add-set-btn" onclick="addSet(${di},${ei})">＋ Adaugă set</button>
+    </div>
+  </div>`;
+}
+
+function renderSetRow(di, ei, si, s) {
+  return `<div class="set-row" id="row-${di}-${ei}-${si}">
+    <span class="set-label">S${si+1}</span>
+    <input class="set-input" type="number" value="${s.kg}" placeholder="kg" oninput="updateSet(${di},${ei},${si},'kg',this.value)">
+    <input class="set-input" type="number" value="${s.reps}" placeholder="reps" oninput="updateSet(${di},${ei},${si},'reps',this.value)">
+    <button class="set-done-btn${s.done?' done':''}" onclick="event.stopPropagation();toggleSetDone(${di},${ei},${si})">✓</button>
+    <button class="set-del-btn" onclick="event.stopPropagation();deleteSet(${di},${ei},${si})">✕</button>
+  </div>`;
+}
+
+function renderAddExercise(di) {
+  return `<div class="add-exercise-card" id="add-card-${di}">
+    <button class="add-exercise-btn" onclick="openAddEx(${di})">＋ Adaugă exercițiu</button>
+    <div class="add-exercise-form">
+      <div class="edit-row">
+        <div class="edit-label">Nume exercițiu</div>
+        <input class="edit-input" id="new-name-${di}" placeholder="ex: Cable Row">
+      </div>
+      <div class="edit-row">
+        <div class="edit-label">Schemă</div>
+        <input class="edit-input" id="new-scheme-${di}" placeholder="ex: 3x12">
+      </div>
+      <button class="add-ex-save" onclick="saveNewEx(${di})">Adaugă</button>
+      <button class="add-ex-cancel" onclick="closeAddEx(${di})">Anulează</button>
+    </div>
+  </div>`;
+}
+
+// ── Actions ───────────────────────────────────────────────────────
+function switchDay(n) {
+  document.querySelectorAll('.day').forEach((d,i) => d.classList.toggle('active', i===n));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===n));
+}
+
+function toggleEx(di, ei) {
+  const el = document.getElementById('ex-'+di+'-'+ei);
+  if (el.classList.contains('editing')) return;
+  el.classList.toggle('open');
+}
+
+function toggleEditEx(di, ei) {
+  const el = document.getElementById('ex-'+di+'-'+ei);
+  el.classList.toggle('editing');
+  el.classList.remove('open');
+}
+
+function saveEditEx(di, ei) {
+  const name = document.getElementById('edit-name-'+di+'-'+ei).value.trim();
+  const scheme = document.getElementById('edit-scheme-'+di+'-'+ei).value.trim();
+  if (!name) return;
+  state[di].exercises[ei].name = name;
+  state[di].exercises[ei].scheme = scheme;
+  save();
+  // re-render just this exercise preserving open/done state
+  const wasOpen = document.getElementById('ex-'+di+'-'+ei).classList.contains('open');
+  document.getElementById('ex-'+di+'-'+ei).outerHTML; // noop
+  const container = document.getElementById('exercises-'+di);
+  const exEls = container.children;
+  exEls[ei].outerHTML = renderExercise(di, ei);
+  if (wasOpen) document.getElementById('ex-'+di+'-'+ei).classList.add('open');
+}
+
+// Delete exercise
+let pendingDelete = null;
+function confirmDeleteEx(di, ei) {
+  const name = state[di].exercises[ei].name;
+  document.getElementById('confirm-text').textContent = '"' + name + '" va fi șters definitiv.';
+  pendingDelete = {di, ei};
+  document.getElementById('confirm-overlay').classList.add('show');
+  document.getElementById('confirm-yes').onclick = function() {
+    deleteExercise(pendingDelete.di, pendingDelete.ei);
+    closeConfirm();
+  };
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  pendingDelete = null;
+}
+function deleteExercise(di, ei) {
+  state[di].exercises.splice(ei, 1);
+  save();
+  document.getElementById('exercises-'+di).innerHTML =
+    state[di].exercises.map((_,i) => renderExercise(di, i)).join('');
+  refreshProgress(di);
+}
+
+// Add exercise
+function openAddEx(di) { document.getElementById('add-card-'+di).classList.add('open'); }
+function closeAddEx(di) {
+  document.getElementById('add-card-'+di).classList.remove('open');
+  document.getElementById('new-name-'+di).value = '';
+  document.getElementById('new-scheme-'+di).value = '';
+}
+function saveNewEx(di) {
+  const name = document.getElementById('new-name-'+di).value.trim();
+  const scheme = document.getElementById('new-scheme-'+di).value.trim() || '3x10';
+  if (!name) return;
+  state[di].exercises.push({ name, scheme, sets: [{kg:'',reps:'',done:false},{kg:'',reps:'',done:false},{kg:'',reps:'',done:false}] });
+  save();
+  closeAddEx(di);
+  document.getElementById('exercises-'+di).innerHTML =
+    state[di].exercises.map((_,i) => renderExercise(di, i)).join('');
+  refreshProgress(di);
+}
+
+// Sets
+function updateSet(di, ei, si, field, val) {
+  state[di].exercises[ei].sets[si][field] = val;
+  save();
+}
+function toggleSetDone(di, ei, si) {
+  state[di].exercises[ei].sets[si].done = !state[di].exercises[ei].sets[si].done;
+  save();
+  const sets = state[di].exercises[ei].sets;
+  sets.forEach(function(s, idx) {
+    const btn = document.querySelector('#row-'+di+'-'+ei+'-'+idx+' .set-done-btn');
+    if (btn) btn.classList.toggle('done', s.done);
+  });
+  const allDone = sets.length > 0 && sets.every(s => s.done);
+  document.getElementById('ex-'+di+'-'+ei).classList.toggle('completed', allDone);
+  refreshProgress(di);
+}
+function addSet(di, ei) {
+  const sets = state[di].exercises[ei].sets;
+  const last = sets.length > 0 ? sets[sets.length-1] : {kg:'',reps:''};
+  sets.push({kg:last.kg, reps:last.reps, done:false});
+  save();
+  document.getElementById('sets-'+di+'-'+ei).innerHTML = sets.map((s,si) => renderSetRow(di,ei,si,s)).join('');
+  refreshProgress(di);
+}
+function deleteSet(di, ei, si) {
+  state[di].exercises[ei].sets.splice(si, 1);
+  save();
+  document.getElementById('sets-'+di+'-'+ei).innerHTML =
+    state[di].exercises[ei].sets.map((s,si2) => renderSetRow(di,ei,si2,s)).join('');
+  refreshProgress(di);
+}
+
+function refreshProgress(di) {
+  const exArr = state[di].exercises;
+  const total = exArr.length;
+  const done = exArr.filter(ex => ex.sets.length > 0 && ex.sets.every(s => s.done)).length;
+  document.getElementById('prog'+di).style.width = (total ? done/total*100 : 0)+'%';
+  document.getElementById('prog'+di+'-label').textContent = done+'/'+total;
+}
+
+function resetDay(di) {
+  const def = DEFAULT_DAYS[di];
+  state[di] = { exercises: def.exercises.map(ex => ({
+    name: ex.name, scheme: ex.scheme,
+    sets: ex.sets.map(s => ({kg:s.kg, reps:s.reps, done:false}))
+  }))};
+  save();
+  document.getElementById('exercises-'+di).innerHTML =
+    state[di].exercises.map((_,i) => renderExercise(di,i)).join('');
+  refreshProgress(di);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+loadState();
+renderAll();
+</script>
+</body>
+</html>
